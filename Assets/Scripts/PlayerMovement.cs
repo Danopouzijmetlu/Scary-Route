@@ -4,15 +4,15 @@ public class PlayerMovement : MonoBehaviour
 {
     [Header("References")]
     public CharacterController controller;
-    public Animator anim; // Tady je pøidána reference na Animator
+    public Animator anim;
 
     [Header("Movement")]
     public float walkSpeed = 6f;
     public float sprintSpeed = 10f;
 
     [Header("Jump & Gravity")]
-    public float gravity = -9.81f;
-    public float jumpHeight = 3f;
+    public float gravity = -15f;
+    public float jumpHeight = 1.5f;
 
     [Header("Stamina")]
     public float maxStamina = 10f;
@@ -30,14 +30,26 @@ public class PlayerMovement : MonoBehaviour
 
     void Start()
     {
+        if (controller == null)
+            controller = GetComponent<CharacterController>();
+
+        if (anim == null)
+            anim = GetComponentInChildren<Animator>();
+
         currentStamina = maxStamina;
+
+        if (controller != null)
+        {
+            controller.Move(Vector3.down * 0.1f);
+            IsGrounded = controller.isGrounded;
+        }
     }
 
     void Update()
     {
-        IsGrounded = controller.isGrounded;
+        if (controller == null) return;
 
-        if (IsGrounded && velocity.y < 0)
+        if (IsGrounded && velocity.y < 0f)
         {
             velocity.y = -2f;
         }
@@ -48,9 +60,11 @@ public class PlayerMovement : MonoBehaviour
         Vector3 move = transform.right * x + transform.forward * z;
         move = Vector3.ClampMagnitude(move, 1f);
 
-        IsMoving = move.magnitude > 0.1f;
+        IsMoving = move.sqrMagnitude > 0.01f;
 
-        bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && IsMoving && currentStamina > 0f;
+        bool wantsToSprint = (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                             && IsMoving
+                             && currentStamina > 0f;
 
         if (wantsToSprint)
         {
@@ -74,22 +88,29 @@ public class PlayerMovement : MonoBehaviour
             }
         }
 
-        float speed = IsSprinting ? sprintSpeed : walkSpeed;
-        controller.Move(move * speed * Time.deltaTime);
-
-        // Skok
         if (Input.GetButtonDown("Jump") && IsGrounded)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+
+            if (anim != null)
+            {
+                anim.SetTrigger("jump");
+            }
         }
 
-        // Gravitace
         velocity.y += gravity * Time.deltaTime;
-        controller.Move(velocity * Time.deltaTime);
 
-        // ODESLÁNÍ STAVÙ DO ANIMATORU
+        float speed = IsSprinting ? sprintSpeed : walkSpeed;
+        Vector3 finalMove = (move * speed) + velocity;
+        controller.Move(finalMove * Time.deltaTime);
+
+        IsGrounded = controller.isGrounded;
+
         if (anim != null)
         {
+            anim.SetFloat("moveX", x, 0.08f, Time.deltaTime);
+            anim.SetFloat("moveZ", z, 0.08f, Time.deltaTime);
+            anim.SetFloat("yVelocity", velocity.y);
             anim.SetBool("isGrounded", IsGrounded);
             anim.SetBool("isMoving", IsMoving);
             anim.SetBool("isSprinting", IsSprinting);
