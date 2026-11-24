@@ -35,7 +35,6 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        // Automatická detekce zemì zabudovaná pøímo v Character Controlleru
         IsGrounded = controller.isGrounded;
 
         if (IsGrounded && velocity.y < 0)
@@ -43,7 +42,6 @@ public class PlayerMovement : MonoBehaviour
             velocity.y = -2f;
         }
 
-        // WASD
         float x = Input.GetAxisRaw("Horizontal");
         float z = Input.GetAxisRaw("Vertical");
 
@@ -52,7 +50,6 @@ public class PlayerMovement : MonoBehaviour
 
         IsMoving = move.magnitude > 0.1f;
 
-        // Sprint
         bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && IsMoving && currentStamina > 0f;
 
         if (wantsToSprint)
